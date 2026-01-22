@@ -1,8 +1,6 @@
 package in.NihalSingh.invoicegeneratorapi.security;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -24,18 +22,18 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    // Generate Token
-    public String generateToken(String username) {
+    // Generate JWT using email
+    public String generateToken(String email) {
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(email)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // Extract username
-    public String extractUsername(String token) {
+    // Extract email from token
+    public String extractEmail(String token) {
         return getClaims(token).getSubject();
     }
 
@@ -49,7 +47,6 @@ public class JwtUtil {
         }
     }
 
-    // Internal
     private Claims getClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())

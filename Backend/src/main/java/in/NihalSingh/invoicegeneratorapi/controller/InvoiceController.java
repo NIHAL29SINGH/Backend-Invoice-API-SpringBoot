@@ -66,10 +66,12 @@ public class InvoiceController {
             @RequestParam String email,
             Authentication authentication
     ) {
-        Invoice invoice =
-                invoiceService.getInvoiceById(authentication.getName(), id);
+        String username = authentication.getName();
 
+        Invoice invoice = invoiceService.getInvoiceById(username, id);
         emailService.sendInvoiceEmail(email, invoice);
+
         return ResponseEntity.ok("Invoice sent successfully");
     }
+
 }

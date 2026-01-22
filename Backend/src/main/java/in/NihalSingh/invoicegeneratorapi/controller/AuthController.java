@@ -1,11 +1,10 @@
 package in.NihalSingh.invoicegeneratorapi.controller;
 
+import in.NihalSingh.invoicegeneratorapi.dto.*;
 import in.NihalSingh.invoicegeneratorapi.entity.User;
 import in.NihalSingh.invoicegeneratorapi.security.JwtUtil;
 import in.NihalSingh.invoicegeneratorapi.service.UserService;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -13,37 +12,29 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final JwtUtil jwtUtil;
-    private final UserService userService;
+    private final UserService service;
+    private final JwtUtil jwt;
 
-    // ==============================
-    // LOGIN / REGISTER
-    // ==============================
+    @PostMapping("/request")
+    public String request(@RequestBody RegisterRequest req) {
+        service.requestRegistration(req);
+        return "Token sent to email";
+    }
+
+    @PostMapping("/complete")
+    public String complete(@RequestBody CompleteRegistrationRequest req) {
+        service.completeRegistration(req);
+        return "Registration successful";
+    }
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+    public String login(@RequestBody LoginRequest req) {
 
-        // Save user if not exists
-        User user = userService.createIfNotExists(request.getUsername());
+        User user = service.login(req);
 
-        // Generate JWT
-        String token = jwtUtil.generateToken(user.getUsername());
-
-        return ResponseEntity.ok(
-                new AuthResponse(token, user)
-        );
+        // ✅ Pass email to JWT
+        return jwt.generateToken(user.getEmail());
     }
 
-    // ==============================
-    // DTOs
-    // ==============================
-    @Data
-    public static class LoginRequest {
-        private String username;
-    }
-
-    @Data
-    public static class AuthResponse {
-        private final String token;
-        private final User user;
-    }
 }
+
+
