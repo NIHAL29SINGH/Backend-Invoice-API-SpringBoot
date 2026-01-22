@@ -35,6 +35,21 @@ public class AuthController {
         return jwt.generateToken(user.getEmail());
     }
 
+    // EMAIL FORGOT AND RESET PROCESS
+    private final UserService userService;
+
+    @PostMapping("/forgot-password")
+    public String forgotPassword(@RequestBody ForgotPasswordRequest req) {
+        userService.forgotPassword(req.getEmail());
+        return "Password reset token sent to email";
+    }
+
+    @PostMapping("/reset-password")
+    public String resetPassword(@RequestBody ResetPasswordRequest req) {
+        userService.resetPassword(req.getToken(), req.getNewPassword());
+        return "Password updated successfully";
+    }
+
 }
 
 

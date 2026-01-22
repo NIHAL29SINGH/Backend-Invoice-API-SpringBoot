@@ -23,6 +23,9 @@ public class EmailService {
     @Value("${admin.email}")
     private String adminEmail;
 
+    // ===============================
+    // REGISTRATION MAIL
+    // ===============================
     public void sendRegistrationMail(String to, String token) {
         try {
             MimeMessage msg = mailSender.createMimeMessage();
@@ -31,7 +34,11 @@ public class EmailService {
             helper.setFrom(fromEmail);
             helper.setTo(to);
             helper.setSubject("Verify Your Account");
-            helper.setText("Your verification token:\n\n" + token);
+            helper.setText(
+                    "Your registration token:\n\n" +
+                            token +
+                            "\n\nToken valid for 30 minutes."
+            );
 
             mailSender.send(msg);
         } catch (Exception e) {
@@ -39,6 +46,9 @@ public class EmailService {
         }
     }
 
+    // ===============================
+    // WELCOME MAIL
+    // ===============================
     public void sendWelcomeMail(String email) {
         try {
             MimeMessage msg = mailSender.createMimeMessage();
@@ -47,7 +57,7 @@ public class EmailService {
             helper.setFrom(fromEmail);
             helper.setTo(email);
             helper.setSubject("Welcome");
-            helper.setText("Your account has been activated.");
+            helper.setText("Your account has been successfully activated.");
 
             mailSender.send(msg);
         } catch (Exception e) {
@@ -55,6 +65,9 @@ public class EmailService {
         }
     }
 
+    // ===============================
+    // ADMIN NOTIFICATION
+    // ===============================
     public void notifyAdmin(User user) {
         try {
             MimeMessage msg = mailSender.createMimeMessage();
@@ -75,6 +88,9 @@ public class EmailService {
         }
     }
 
+    // ===============================
+    // INVOICE MAIL
+    // ===============================
     public void sendInvoiceEmail(String to, Invoice invoice) {
         try {
             byte[] pdf = pdfService.generateInvoicePdf(invoice);
@@ -87,11 +103,39 @@ public class EmailService {
             helper.setSubject("Invoice #" + invoice.getId());
             helper.setText("Invoice attached");
 
-            helper.addAttachment("invoice.pdf", new ByteArrayResource(pdf));
+            helper.addAttachment(
+                    "invoice.pdf",
+                    new ByteArrayResource(pdf)
+            );
 
             mailSender.send(msg);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
+
+
+    // SEND PASSWORD RESET MAIL
+    public void sendPasswordResetMail(String email, String token) {
+        try {
+            MimeMessage msg = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(msg);
+
+            helper.setFrom(fromEmail);
+            helper.setTo(email);
+            helper.setSubject("Reset Password");
+
+            helper.setText(
+                    "Use this token to reset your password:\n\n" +
+                            token +
+                            "\n\nToken valid for 15 minutes."
+            );
+
+            mailSender.send(msg);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to send reset mail", e);
+        }
+    }
+
+
 }
