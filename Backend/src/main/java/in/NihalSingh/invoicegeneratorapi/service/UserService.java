@@ -6,9 +6,6 @@ import in.NihalSingh.invoicegeneratorapi.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import in.NihalSingh.invoicegeneratorapi.entity.PasswordResetToken;
-import in.NihalSingh.invoicegeneratorapi.repository.PasswordResetTokenRepository;
-
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -19,13 +16,12 @@ public class UserService {
 
     private final UserRepository userRepo;
     private final RegistrationTokenRepository tokenRepo;
+    private final PasswordResetTokenRepository resetTokenRepo;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
-    private final PasswordResetTokenRepository resetTokenRepo;
-
 
     // ===============================
-    // REGISTER (STEP 1)
+    // REGISTER
     // ===============================
     public void requestRegistration(RegisterRequest req) {
 
@@ -56,7 +52,7 @@ public class UserService {
     public void completeRegistration(CompleteRegistrationRequest req) {
 
         RegistrationToken token = tokenRepo.findByToken(req.getToken())
-                .orElseThrow(() -> new RuntimeException("Invalid or expired token"));
+                .orElseThrow(() -> new RuntimeException("Invalid token"));
 
         User user = token.getUser();
 
@@ -87,7 +83,7 @@ public class UserService {
     }
 
     // ===============================
-    // FETCH USER USING EMAIL (JWT)
+    // GET USER BY EMAIL
     // ===============================
     public User getByEmail(String email) {
         return userRepo.findByEmail(email)
@@ -95,7 +91,7 @@ public class UserService {
     }
 
     // ===============================
-    // UPDATE USER
+    // UPDATE PROFILE
     // ===============================
     public User updateUser(String email, UpdateUserRequest dto) {
 
@@ -119,7 +115,9 @@ public class UserService {
         return userRepo.save(user);
     }
 
+    // ===============================
     // FORGOT PASSWORD
+    // ===============================
     public void forgotPassword(String email) {
 
         User user = userRepo.findByEmail(email)
@@ -134,7 +132,10 @@ public class UserService {
 
         emailService.sendPasswordResetMail(email, token.getToken());
     }
+
+    // ===============================
     // RESET PASSWORD
+    // ===============================
     public void resetPassword(String token, String newPassword) {
 
         PasswordResetToken resetToken =
@@ -151,5 +152,4 @@ public class UserService {
         userRepo.save(user);
         resetTokenRepo.delete(resetToken);
     }
-
 }

@@ -2,7 +2,6 @@ package in.NihalSingh.invoicegeneratorapi.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -20,7 +19,7 @@ public class RegistrationToken {
 
     private LocalDateTime expiry;
 
-    @OneToOne
-    @JoinColumn(name = "user_id", unique = true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 }

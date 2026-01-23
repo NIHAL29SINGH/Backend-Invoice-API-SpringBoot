@@ -6,14 +6,15 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class User {
 
     @Id
@@ -23,12 +24,10 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false, unique = true)
-    private String username;
-
     @Column(nullable = false)
     private String password;
 
+    private String username;
     private String firstName;
     private String lastName;
     private String phone;
@@ -39,9 +38,18 @@ public class User {
 
     private boolean enabled;
 
-
-   @CreationTimestamp
+    @CreationTimestamp
+    @Column(updatable = false)
     private LocalDateTime createdAt;
+
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    // 🔥 FIX #1 — REQUIRED
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PasswordResetToken> passwordResetTokens;
+
+    // 🔥 FIX #2 — REQUIRED
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RegistrationToken> registrationTokens;
 }

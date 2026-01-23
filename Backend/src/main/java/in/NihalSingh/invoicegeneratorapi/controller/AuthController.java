@@ -12,44 +12,53 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserService service;
-    private final JwtUtil jwt;
+    private final UserService userService;
+    private final JwtUtil jwtUtil;
 
+    // ============================
+    // REGISTER
+    // ============================
     @PostMapping("/request")
     public String request(@RequestBody RegisterRequest req) {
-        service.requestRegistration(req);
+        userService.requestRegistration(req);
         return "Token sent to email";
     }
 
     @PostMapping("/complete")
     public String complete(@RequestBody CompleteRegistrationRequest req) {
-        service.completeRegistration(req);
+        userService.completeRegistration(req);
         return "Registration successful";
     }
+
+    // ============================
+    // LOGIN
+    // ============================
     @PostMapping("/login")
     public String login(@RequestBody LoginRequest req) {
 
-        User user = service.login(req);
+        User user = userService.login(req);
 
-        // ✅ Pass email to JWT
-        return jwt.generateToken(user.getEmail());
+        return jwtUtil.generateToken(
+                user.getEmail(),
+                user.getRole().name()
+        );
     }
 
-    // EMAIL FORGOT AND RESET PROCESS
-    private final UserService userService;
-
+    // ============================
+    // FORGOT PASSWORD
+    // ============================
     @PostMapping("/forgot-password")
     public String forgotPassword(@RequestBody ForgotPasswordRequest req) {
         userService.forgotPassword(req.getEmail());
         return "Password reset token sent to email";
     }
 
+    // ============================
+    // RESET PASSWORD
+    // ============================
     @PostMapping("/reset-password")
     public String resetPassword(@RequestBody ResetPasswordRequest req) {
         userService.resetPassword(req.getToken(), req.getNewPassword());
         return "Password updated successfully";
     }
-
 }
-
-
