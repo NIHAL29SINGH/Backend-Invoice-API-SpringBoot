@@ -2,6 +2,7 @@ package in.NihalSingh.invoicegeneratorapi.service;
 
 import in.NihalSingh.invoicegeneratorapi.entity.Invoice;
 import in.NihalSingh.invoicegeneratorapi.entity.InvoiceDetails;
+import in.NihalSingh.invoicegeneratorapi.entity.InvoiceStatus;
 import in.NihalSingh.invoicegeneratorapi.entity.User;
 import in.NihalSingh.invoicegeneratorapi.repository.InvoiceRepository;
 import in.NihalSingh.invoicegeneratorapi.repository.UserRepository;
@@ -20,13 +21,18 @@ public class InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
     private final UserRepository userRepository;
+    private final PdfService pdfService;
+    private final EmailService emailService;
 
-    // ✅ CREATE INVOICE
-    public Invoice saveInvoice(Invoice invoice, String username) {
+    // =============================
+    // CREATE INVOICE
+    // =============================
+    public Invoice saveInvoice(Invoice invoice, String email) {
 
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "User not found"));
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")
+                );
 
         invoice.setUser(user);
         invoice.setCreatedAt(Instant.now());
@@ -41,26 +47,50 @@ public class InvoiceService {
         return invoiceRepository.save(invoice);
     }
 
-    // ✅ GET ALL INVOICES
-    public List<Invoice> fetchInvoices(String username) {
-        return invoiceRepository.findByUserUsername(username);
+    // =============================
+    // GET ALL
+    // =============================
+    public List<Invoice> fetchInvoices(String email) {
+        return invoiceRepository.findByUserEmail(email);
     }
 
-    // ✅ GET SINGLE INVOICE
-    public Invoice getInvoiceById(String username, Long id) {
+    // =============================
+    // GET ONE
+    // =============================
+    public Invoice getInvoiceById(String email, Long id) {
         return invoiceRepository
-                .findByUserUsernameAndId(username, id)
+                .findByUserEmailAndId(email, id)
                 .orElseThrow(() ->
-                        new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "Invoice not found"
-                        )
+                        new ResponseStatusException(HttpStatus.NOT_FOUND, "Invoice not found")
                 );
     }
 
-    // ✅ DELETE
-    public void removeInvoice(String username, Long id) {
-        Invoice invoice = getInvoiceById(username, id);
+    // =============================
+    // DELETE
+    // =============================
+    public void removeInvoice(String email, Long id) {
+        Invoice invoice = getInvoiceById(email, id);
         invoiceRepository.delete(invoice);
+    }
+
+    // =============================
+    // PREVIEW PDF
+    // =============================
+    public byte[] previewInvoice(Long id, String email) {
+        Invoice invoice = getInvoiceById(email, id);
+        return pdfService.generateInvoicePdf(invoice);
+    }
+
+    // =============================
+    // SEND INVOICE
+    // =============================
+    public void sendInvoice(Long id, String emailToSend, String email) {
+
+        Invoice invoice = getInvoiceById(email, id);
+
+        emailService.sendInvoiceEmail(emailToSend, invoice);
+
+        invoice.setStatus(InvoiceStatus.SENT);
+        invoiceRepository.save(invoice);
     }
 }

@@ -32,10 +32,19 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+
+                        // ✅ ADMIN ONLY
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // ✅ USER ONLY (IMPORTANT)
+                        .requestMatchers("/api/invoices/**").hasRole("USER")
+
+                        // ✅ Any logged-in user
                         .requestMatchers("/api/users/**").authenticated()
+
                         .anyRequest().authenticated()
                 )
+
 
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

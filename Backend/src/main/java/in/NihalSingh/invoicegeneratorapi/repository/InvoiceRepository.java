@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
-    List<Invoice> findByUserUsername(String username);
+    List<Invoice> findByUserEmail(String email);
 
-    Optional<Invoice> findByUserUsernameAndId(String username, Long id);
+    Optional<Invoice> findByUserEmailAndId(String email, Long id);
 }

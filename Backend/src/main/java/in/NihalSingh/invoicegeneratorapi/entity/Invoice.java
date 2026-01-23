@@ -3,10 +3,12 @@ package in.NihalSingh.invoicegeneratorapi.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 import java.util.List;
 
+import in.NihalSingh.invoicegeneratorapi.entity.InvoiceStatus;
 @Entity
 @Table(name = "invoices")
 @Data
@@ -16,6 +18,7 @@ public class Invoice {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // ================= USER =================
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnore
@@ -51,20 +54,34 @@ public class Invoice {
     // ================= INVOICE DETAILS =================
     @Embedded
     @AttributeOverrides({
-            @AttributeOverride(name = "number", column = @Column(name = "number")),
-            @AttributeOverride(name = "date", column = @Column(name = "date")),
+            @AttributeOverride(name = "number", column = @Column(name = "invoice_number")),
+            @AttributeOverride(name = "date", column = @Column(name = "invoice_date")),
             @AttributeOverride(name = "dueDate", column = @Column(name = "due_date"))
     })
     private InvoiceDetails invoice;
 
     // ================= ITEMS =================
     @ElementCollection
-    @CollectionTable(name = "invoice_items", joinColumns = @JoinColumn(name = "invoice_id"))
+    @CollectionTable(name = "invoice_items",
+            joinColumns = @JoinColumn(name = "invoice_id"))
     private List<Item> items;
 
+    // ================= TEMPLATE =================
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "template_id")
+    private InvoiceTemplate template;
+
     private Double tax;
-    private String template;
     private String title;
 
+    @CreationTimestamp
+    @Column(updatable = false)
     private Instant createdAt;
+
+
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private InvoiceStatus status = InvoiceStatus.DRAFT;
+
 }

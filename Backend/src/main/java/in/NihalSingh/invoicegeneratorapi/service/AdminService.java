@@ -63,10 +63,11 @@ public class AdminService {
     @Transactional
     public void deleteUser(Long id) {
 
-        if (!userRepository.existsById(id)) {
-            throw new RuntimeException("User not found");
-        }
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        userRepository.hardDeleteById(id); // ✅ SAFE
+        // Let Hibernate handle cascade deletes
+        userRepository.delete(user);
     }
+
 }

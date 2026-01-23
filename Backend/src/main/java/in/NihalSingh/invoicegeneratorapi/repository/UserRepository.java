@@ -14,7 +14,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
 
-    @Modifying
-    @Query(value = "DELETE FROM users WHERE id = :id", nativeQuery = true)
-    void hardDeleteById(@Param("id") Long id);
+
 }

@@ -1,6 +1,7 @@
 package in.NihalSingh.invoicegeneratorapi.controller;
 
 import in.NihalSingh.invoicegeneratorapi.entity.Invoice;
+import in.NihalSingh.invoicegeneratorapi.entity.InvoiceStatus;
 import in.NihalSingh.invoicegeneratorapi.service.EmailService;
 import in.NihalSingh.invoicegeneratorapi.service.InvoiceService;
 import lombok.RequiredArgsConstructor;
@@ -73,5 +74,34 @@ public class InvoiceController {
 
         return ResponseEntity.ok("Invoice sent successfully");
     }
+    @GetMapping("/{id}/preview")
+    public ResponseEntity<byte[]> previewInvoice(
+            @PathVariable Long id,
+            Authentication auth
+    ) {
+        byte[] pdf = invoiceService.previewInvoice(id, auth.getName());
+
+        return ResponseEntity.ok()
+                .header("Content-Type", "application/pdf")
+                .body(pdf);
+    }
+
+    @GetMapping("/{id}/download")
+    public ResponseEntity<byte[]> downloadInvoice(
+            @PathVariable Long id,
+            Authentication auth
+    ) {
+        byte[] pdf = invoiceService.previewInvoice(id, auth.getName());
+
+        return ResponseEntity.ok()
+                .header("Content-Disposition",
+                        "attachment; filename=invoice-" + id + ".pdf")
+                .body(pdf);
+    }
+
+
 
 }
+
+
+

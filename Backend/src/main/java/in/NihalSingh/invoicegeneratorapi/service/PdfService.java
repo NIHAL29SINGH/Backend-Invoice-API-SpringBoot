@@ -2,95 +2,78 @@ package in.NihalSingh.invoicegeneratorapi.service;
 
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import in.NihalSingh.invoicegeneratorapi.entity.Invoice;
+import in.NihalSingh.invoicegeneratorapi.entity.Item;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 
 @Service
+@RequiredArgsConstructor
 public class PdfService {
 
+    private final QrCodeService qrCodeService;
+
     public byte[] generateInvoicePdf(Invoice invoice) {
+
         try {
-            String html = buildHtml(invoice);
+            String html = invoice.getTemplate() != null
+                    ? invoice.getTemplate().getHtmlTemplate()
+                    : buildDefaultTemplate(invoice);
 
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            // QR DATA
+            String qrData =
+                    "Invoice: " + invoice.getInvoice().getNumber() +
+                            "\nCustomer: " + invoice.getBilling().getName() +
+                            "\nTotal: " + invoice.getItems().stream()
+                            .mapToDouble(i -> i.getQty() * i.getAmount())
+                            .sum();
 
+            String qrBase64 = qrCodeService.generateQrBase64(qrData);
+
+            html = html.replace("{{qr}}",
+                    "<img width='120' src='data:image/png;base64," + qrBase64 + "' />");
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
             PdfRendererBuilder builder = new PdfRendererBuilder();
-            builder.useFastMode();
             builder.withHtmlContent(html, null);
-            builder.toStream(outputStream);
+            builder.toStream(out);
             builder.run();
 
-            return outputStream.toByteArray();
+            return out.toByteArray();
 
         } catch (Exception e) {
-            throw new RuntimeException("Failed to generate PDF", e);
+            throw new RuntimeException("PDF generation failed", e);
         }
     }
 
-    private String buildHtml(Invoice invoice) {
+    private String buildDefaultTemplate(Invoice invoice) {
 
-        StringBuilder itemsHtml = new StringBuilder();
-
-        invoice.getItems().forEach(item -> {
-            itemsHtml.append("""
-                <tr>
-                    <td>%s</td>
-                    <td>%d</td>
-                    <td>%.2f</td>
-                    <td>%.2f</td>
-                </tr>
-            """.formatted(
-                    item.getName(),
-                    item.getQty(),
-                    item.getAmount(),
-                    item.getQty() * item.getAmount()
-            ));
-        });
+        double total = invoice.getItems()
+                .stream()
+                .mapToDouble(i -> i.getQty() * i.getAmount())
+                .sum();
 
         return """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <style>
-                    body { font-family: Arial; padding: 40px; }
-                    h2 { color: #2c3e50; }
-                    table { width: 100%%; border-collapse: collapse; margin-top: 20px; }
-                    th, td { border: 1px solid #ddd; padding: 10px; }
-                    th { background-color: #f5f5f5; }
-                    .total { text-align: right; margin-top: 20px; font-size: 18px; }
-                </style>
-            </head>
-            <body>
+        <html>
+        <body style="font-family:Arial;padding:40px">
 
-                <h2>Invoice</h2>
+        <div style="display:flex;justify-content:space-between">
+            <h2>INVOICE</h2>
+            {{qr}}
+        </div>
 
-                <p><strong>Invoice No:</strong> %s</p>
-                <p><strong>Billed To:</strong> %s</p>
+        <p><b>Invoice No:</b> %s</p>
+        <p><b>Customer:</b> %s</p>
 
-                <table>
-                    <tr>
-                        <th>Item</th>
-                        <th>Qty</th>
-                        <th>Rate</th>
-                        <th>Total</th>
-                    </tr>
-                    %s
-                </table>
+        <h3>Total: ₹%.2f</h3>
 
-                <div class="total">
-                    <strong>Total Amount: ₹%.2f</strong>
-                </div>
-
-            </body>
-            </html>
+        </body>
+        </html>
         """.formatted(
                 invoice.getInvoice().getNumber(),
-                invoice.getBilling().getName(),   // ✅ FIXED
-                itemsHtml.toString(),
-                invoice.getItems().stream()
-                        .mapToDouble(i -> i.getQty() * i.getAmount())
-                        .sum()
+                invoice.getBilling().getName(),
+                total
         );
     }
 }
