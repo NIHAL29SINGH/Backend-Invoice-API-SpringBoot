@@ -17,22 +17,95 @@ public class PdfService {
     public byte[] generateInvoicePdf(Invoice invoice) {
 
         try {
-            String html = invoice.getTemplate() != null
-                    ? invoice.getTemplate().getHtmlTemplate()
-                    : buildDefaultTemplate(invoice);
+            String html = invoice.getTemplate().getHtmlTemplate();
 
-            // QR DATA
-            String qrData =
-                    "Invoice: " + invoice.getInvoice().getNumber() +
-                            "\nCustomer: " + invoice.getBilling().getName() +
-                            "\nTotal: " + invoice.getItems().stream()
-                            .mapToDouble(i -> i.getQty() * i.getAmount())
-                            .sum();
+            /* ================= LOGO ================= */
+            String logo = "";
+            if (invoice.getCompany() != null &&
+                    invoice.getCompany().getLogoBase64() != null &&
+                    !invoice.getCompany().getLogoBase64().isEmpty()) {
 
-            String qrBase64 = qrCodeService.generateQrBase64(qrData);
+                logo = "<img style='width:100px;height:auto' src='data:image/png;base64,"
+                        + invoice.getCompany().getLogoBase64() + "'/>";
+            }
 
-            html = html.replace("{{qr}}",
-                    "<img width='120' src='data:image/png;base64," + qrBase64 + "' />");
+            /* ================= ITEMS ================= */
+            StringBuilder items = new StringBuilder();
+            double total = 0;
+
+            for (Item i : invoice.getItems()) {
+                double rowTotal = i.getQty() * i.getAmount();
+                total += rowTotal;
+
+                items.append("""
+                    <tr>
+                        <td>%s</td>
+                        <td>%d</td>
+                        <td>₹%.2f</td>
+                        <td>₹%.2f</td>
+                    </tr>
+                """.formatted(
+                        i.getName(),
+                        i.getQty(),
+                        i.getAmount(),
+                        rowTotal
+                ));
+            }
+
+            /* ================= QR ================= */
+            String qr = qrCodeService.generateQrBase64(
+                    "Invoice: " + invoice.getInvoice().getNumber()
+            );
+
+            /* ================= TEMPLATE REPLACEMENT ================= */
+            html = html
+                    // Invoice
+                    .replace("{{invoice}}",
+                            invoice.getInvoice().getNumber())
+
+                    .replace("{{invoiceDate}}",
+                            invoice.getInvoice().getDate() != null
+                                    ? invoice.getInvoice().getDate().toString()
+                                    : "")
+
+                    .replace("{{dueDate}}",
+                            invoice.getInvoice().getDueDate() != null
+                                    ? invoice.getInvoice().getDueDate().toString()
+                                    : "")
+
+                    // Company
+                    .replace("{{company}}",
+                            invoice.getCompany() != null ? invoice.getCompany().getName() : "")
+
+                    .replace("{{address}}",
+                            invoice.getCompany() != null ? invoice.getCompany().getAddress() : "")
+
+                    .replace("{{logo}}", logo)
+
+                    // Billing
+                    .replace("{{billingName}}",
+                            invoice.getBilling() != null ? invoice.getBilling().getName() : "")
+
+                    .replace("{{billingPhone}}",
+                            invoice.getBilling() != null ? invoice.getBilling().getPhone() : "")
+
+                    .replace("{{billingAddress}}",
+                            invoice.getBilling() != null ? invoice.getBilling().getAddress() : "")
+
+                    // Items
+                    .replace("{{items}}", items.toString())
+
+                    // Totals
+                    .replace("{{total}}", String.valueOf(total))
+
+                    // Bank (optional)
+                    .replace("{{accountName}}", "Your Company Name")
+                    .replace("{{accountNumber}}", "1234567890")
+                    .replace("{{ifsc}}", "SBIN0000123")
+
+                    // QR
+                    .replace("{{qr}}",
+                            "<img width='100' src='data:image/png;base64," + qr + "'/>");
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             PdfRendererBuilder builder = new PdfRendererBuilder();
@@ -45,35 +118,5 @@ public class PdfService {
         } catch (Exception e) {
             throw new RuntimeException("PDF generation failed", e);
         }
-    }
-
-    private String buildDefaultTemplate(Invoice invoice) {
-
-        double total = invoice.getItems()
-                .stream()
-                .mapToDouble(i -> i.getQty() * i.getAmount())
-                .sum();
-
-        return """
-        <html>
-        <body style="font-family:Arial;padding:40px">
-
-        <div style="display:flex;justify-content:space-between">
-            <h2>INVOICE</h2>
-            {{qr}}
-        </div>
-
-        <p><b>Invoice No:</b> %s</p>
-        <p><b>Customer:</b> %s</p>
-
-        <h3>Total: ₹%.2f</h3>
-
-        </body>
-        </html>
-        """.formatted(
-                invoice.getInvoice().getNumber(),
-                invoice.getBilling().getName(),
-                total
-        );
     }
 }

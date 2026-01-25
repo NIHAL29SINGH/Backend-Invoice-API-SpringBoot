@@ -25,10 +25,7 @@ public class InvoiceTemplate {
     @Column(columnDefinition = "LONGTEXT", nullable = false)
     private String htmlTemplate;
 
-    // ✅ NEW: Base64 logo
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
-    private String logoBase64;
+
 
     private boolean active = true;
 }

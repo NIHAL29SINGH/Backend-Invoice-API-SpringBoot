@@ -29,13 +29,15 @@ public class AdminTemplateController {
         return service.update(id, template);
     }
 
-    // ✅ Delete template
+    // ✅ Soft delete (disable)
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
-        service.delete(id);
+        InvoiceTemplate template = service.getById(id); // ✅ FIX
+        template.setActive(false);
+        service.save(template);
     }
 
-    // ✅ Admin can view all templates
+    // ✅ Admin view all
     @GetMapping
     public List<InvoiceTemplate> getAll() {
         return service.getAll();

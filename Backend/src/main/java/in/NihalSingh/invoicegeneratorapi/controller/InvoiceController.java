@@ -1,13 +1,15 @@
 package in.NihalSingh.invoicegeneratorapi.controller;
 
+import in.NihalSingh.invoicegeneratorapi.dto.InvoiceSummaryResponse;
 import in.NihalSingh.invoicegeneratorapi.entity.Invoice;
-import in.NihalSingh.invoicegeneratorapi.entity.InvoiceStatus;
-import in.NihalSingh.invoicegeneratorapi.service.EmailService;
 import in.NihalSingh.invoicegeneratorapi.service.InvoiceService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -17,91 +19,77 @@ import java.util.List;
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
-    private final EmailService emailService;
 
-    // ✅ CREATE
-    @PostMapping
+    // ================= CREATE =================
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Invoice> createInvoice(
-            @RequestBody Invoice invoice,
-            Authentication authentication
+            @RequestPart("invoice") String invoiceJson,
+            @RequestPart(value = "logo", required = false) MultipartFile logo,
+            Authentication auth
     ) {
-        String username = authentication.getName();
         return ResponseEntity.ok(
-                invoiceService.saveInvoice(invoice, username)
+                invoiceService.createInvoice(invoiceJson, logo, auth.getName())
         );
     }
 
-    // ✅ GET ALL
+    // ================= LIST =================
     @GetMapping
-    public ResponseEntity<List<Invoice>> getAll(Authentication authentication) {
+    public ResponseEntity<List<InvoiceSummaryResponse>> getAll(Authentication auth) {
         return ResponseEntity.ok(
-                invoiceService.fetchInvoices(authentication.getName())
+                invoiceService.getAllInvoices(auth.getName())
         );
     }
 
-    // ✅ GET ONE
-    @GetMapping("/{id}")
-    public ResponseEntity<Invoice> getOne(
-            @PathVariable Long id,
-            Authentication authentication
-    ) {
-        return ResponseEntity.ok(
-                invoiceService.getInvoiceById(authentication.getName(), id)
-        );
-    }
-
-    // ✅ DELETE
+    // ================= DELETE =================
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(
+    public ResponseEntity<String> delete(
             @PathVariable Long id,
-            Authentication authentication
+            Authentication auth
     ) {
-        invoiceService.removeInvoice(authentication.getName(), id);
-        return ResponseEntity.noContent().build();
+        invoiceService.deleteInvoice(id, auth.getName());
+        return ResponseEntity.ok("Invoice deleted successfully");
     }
 
-    // ✅ SEND EMAIL
-    @PostMapping("/{id}/send")
-    public ResponseEntity<String> sendInvoice(
+    // ================= PREVIEW =================
+    @GetMapping("/{id}/template/{templateId}/preview")
+    public ResponseEntity<byte[]> preview(
             @PathVariable Long id,
-            @RequestParam String email,
-            Authentication authentication
+            @PathVariable Long templateId,
+            Authentication auth
     ) {
-        String username = authentication.getName();
+        byte[] pdf = invoiceService.previewInvoice(id, templateId, auth.getName());
 
-        Invoice invoice = invoiceService.getInvoiceById(username, id);
-        emailService.sendInvoiceEmail(email, invoice);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=invoice.pdf")
+                .body(pdf);
+    }
 
+    // ================= DOWNLOAD =================
+    @GetMapping("/{id}/template/{templateId}/download")
+    public ResponseEntity<byte[]> download(
+            @PathVariable Long id,
+            @PathVariable Long templateId,
+            Authentication auth
+    ) {
+        byte[] pdf = invoiceService.previewInvoice(id, templateId, auth.getName());
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=invoice.pdf")
+                .body(pdf);
+    }
+
+    // ================= SEND EMAIL =================
+    @PostMapping("/{id}/template/{templateId}/send")
+    public ResponseEntity<String> send(
+            @PathVariable Long id,
+            @PathVariable Long templateId,
+            @RequestParam String email,
+            Authentication auth
+    ) {
+        invoiceService.sendInvoice(id, templateId, email, auth.getName());
         return ResponseEntity.ok("Invoice sent successfully");
     }
-    @GetMapping("/{id}/preview")
-    public ResponseEntity<byte[]> previewInvoice(
-            @PathVariable Long id,
-            Authentication auth
-    ) {
-        byte[] pdf = invoiceService.previewInvoice(id, auth.getName());
-
-        return ResponseEntity.ok()
-                .header("Content-Type", "application/pdf")
-                .body(pdf);
-    }
-
-    @GetMapping("/{id}/download")
-    public ResponseEntity<byte[]> downloadInvoice(
-            @PathVariable Long id,
-            Authentication auth
-    ) {
-        byte[] pdf = invoiceService.previewInvoice(id, auth.getName());
-
-        return ResponseEntity.ok()
-                .header("Content-Disposition",
-                        "attachment; filename=invoice-" + id + ".pdf")
-                .body(pdf);
-    }
-
-
-
 }
-
-
-

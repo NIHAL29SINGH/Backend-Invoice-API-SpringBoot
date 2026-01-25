@@ -21,7 +21,7 @@ public class InvoiceTemplateService {
     }
 
     // =============================
-    // GET ACTIVE ONLY
+    // GET ACTIVE
     // =============================
     public List<InvoiceTemplate> getActiveTemplates() {
         return repository.findByActiveTrue();
@@ -43,7 +43,7 @@ public class InvoiceTemplateService {
     }
 
     // =============================
-    // ✅ SAVE (FIXES YOUR ERROR)
+    // ✅ REQUIRED FIX
     // =============================
     public InvoiceTemplate save(InvoiceTemplate template) {
         return repository.save(template);
@@ -61,9 +61,11 @@ public class InvoiceTemplateService {
     }
 
     // =============================
-    // DELETE
+    // SOFT DELETE
     // =============================
     public void delete(Long id) {
-        repository.deleteById(id);
+        InvoiceTemplate template = getById(id);
+        template.setActive(false);
+        repository.save(template);
     }
 }

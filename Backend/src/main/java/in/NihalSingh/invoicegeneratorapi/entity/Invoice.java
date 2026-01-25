@@ -1,6 +1,7 @@
 package in.NihalSingh.invoicegeneratorapi.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
@@ -8,12 +9,12 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.Instant;
 import java.util.List;
 
-import in.NihalSingh.invoicegeneratorapi.entity.InvoiceStatus;
 @Entity
 @Table(name = "invoices")
 @Data
 public class Invoice {
 
+    // ================= ID =================
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -29,7 +30,9 @@ public class Invoice {
     @AttributeOverrides({
             @AttributeOverride(name = "name", column = @Column(name = "company_name")),
             @AttributeOverride(name = "phone", column = @Column(name = "company_phone")),
-            @AttributeOverride(name = "address", column = @Column(name = "company_address"))
+            @AttributeOverride(name = "address", column = @Column(name = "company_address")),
+            @AttributeOverride(name = "logoBase64",
+                    column = @Column(name = "company_logo", columnDefinition = "LONGTEXT"))
     })
     private Company company;
 
@@ -62,26 +65,28 @@ public class Invoice {
 
     // ================= ITEMS =================
     @ElementCollection
-    @CollectionTable(name = "invoice_items",
-            joinColumns = @JoinColumn(name = "invoice_id"))
+    @CollectionTable(
+            name = "invoice_items",
+            joinColumns = @JoinColumn(name = "invoice_id")
+    )
     private List<Item> items;
 
     // ================= TEMPLATE =================
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "template_id")
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "template_id", nullable = false)
     private InvoiceTemplate template;
 
+    // ================= EXTRA =================
     private Double tax;
+
     private String title;
 
+    @Enumerated(EnumType.STRING)
+    private InvoiceStatus status = InvoiceStatus.DRAFT;
+
     @CreationTimestamp
-    @Column(updatable = false)
     private Instant createdAt;
 
 
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private InvoiceStatus status = InvoiceStatus.DRAFT;
 
 }
