@@ -14,14 +14,14 @@ public class InvoiceTemplateService {
     private final InvoiceTemplateRepository repository;
 
     // =============================
-    // GET ALL
+    // GET ALL (ADMIN)
     // =============================
     public List<InvoiceTemplate> getAll() {
         return repository.findAll();
     }
 
     // =============================
-    // GET ACTIVE
+    // GET ACTIVE (USER SIDE)
     // =============================
     public List<InvoiceTemplate> getActiveTemplates() {
         return repository.findByActiveTrue();
@@ -32,20 +32,16 @@ public class InvoiceTemplateService {
     // =============================
     public InvoiceTemplate getById(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Template not found"));
+                .orElseThrow(() ->
+                        new RuntimeException("Template not found")
+                );
     }
 
     // =============================
     // CREATE
     // =============================
     public InvoiceTemplate create(InvoiceTemplate template) {
-        return repository.save(template);
-    }
-
-    // =============================
-    // ✅ REQUIRED FIX
-    // =============================
-    public InvoiceTemplate save(InvoiceTemplate template) {
+        template.setActive(true);
         return repository.save(template);
     }
 
@@ -54,9 +50,11 @@ public class InvoiceTemplateService {
     // =============================
     public InvoiceTemplate update(Long id, InvoiceTemplate template) {
         InvoiceTemplate existing = getById(id);
+
         existing.setName(template.getName());
         existing.setHtmlTemplate(template.getHtmlTemplate());
         existing.setActive(template.isActive());
+
         return repository.save(existing);
     }
 

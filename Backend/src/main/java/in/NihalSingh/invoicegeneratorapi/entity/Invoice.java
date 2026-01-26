@@ -88,5 +88,13 @@ public class Invoice {
     private Instant createdAt;
 
 
+    private Double subTotal;
+    private Double cgst;
+    private Double sgst;
+    private Double igst;
+    private Double totalAmount;
 
+    // ✅ NEW FIELD (SAFE)
+    @Column(columnDefinition = "LONGTEXT")
+    private String paymentQrBase64;
 }

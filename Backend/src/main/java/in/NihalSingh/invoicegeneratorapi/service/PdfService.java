@@ -19,23 +19,30 @@ public class PdfService {
         try {
             String html = invoice.getTemplate().getHtmlTemplate();
 
-            /* ================= LOGO ================= */
+            // ================= LOGO =================
             String logo = "";
             if (invoice.getCompany() != null &&
                     invoice.getCompany().getLogoBase64() != null &&
-                    !invoice.getCompany().getLogoBase64().isEmpty()) {
+                    !invoice.getCompany().getLogoBase64().isBlank()) {
 
-                logo = "<img style='width:100px;height:auto' src='data:image/png;base64,"
-                        + invoice.getCompany().getLogoBase64() + "'/>";
+                String base64 = invoice.getCompany().getLogoBase64();
+                if (base64.startsWith("data:image")) {
+                    base64 = base64.substring(base64.indexOf(",") + 1);
+                }
+
+                logo = """
+                    <img src="data:image/png;base64,%s"
+                         style="width:120px;height:auto;margin-bottom:10px;" />
+                """.formatted(base64);
             }
 
-            /* ================= ITEMS ================= */
+            // ================= ITEMS =================
             StringBuilder items = new StringBuilder();
-            double total = 0;
+            double subTotal = 0;
 
-            for (Item i : invoice.getItems()) {
-                double rowTotal = i.getQty() * i.getAmount();
-                total += rowTotal;
+            for (Item item : invoice.getItems()) {
+                double rowTotal = item.getQty() * item.getAmount();
+                subTotal += rowTotal;
 
                 items.append("""
                     <tr>
@@ -45,67 +52,62 @@ public class PdfService {
                         <td>₹%.2f</td>
                     </tr>
                 """.formatted(
-                        i.getName(),
-                        i.getQty(),
-                        i.getAmount(),
+                        item.getName(),
+                        item.getQty(),
+                        item.getAmount(),
                         rowTotal
                 ));
             }
 
-            /* ================= QR ================= */
+            // ================= TAX =================
+            double cgst = invoice.getCgst() != null ? invoice.getCgst() : 0;
+            double sgst = invoice.getSgst() != null ? invoice.getSgst() : 0;
+            double igst = invoice.getIgst() != null ? invoice.getIgst() : 0;
+
+            StringBuilder taxBlock = new StringBuilder();
+
+            if (cgst > 0)
+                taxBlock.append("<tr><td>CGST</td><td>₹" + cgst + "</td></tr>");
+
+            if (sgst > 0)
+                taxBlock.append("<tr><td>SGST</td><td>₹" + sgst + "</td></tr>");
+
+            if (igst > 0)
+                taxBlock.append("<tr><td>IGST</td><td>₹" + igst + "</td></tr>");
+
+            double total = subTotal + cgst + sgst + igst;
+
+            // ================= QR =================
             String qr = qrCodeService.generateQrBase64(
                     "Invoice: " + invoice.getInvoice().getNumber()
             );
 
-            /* ================= TEMPLATE REPLACEMENT ================= */
+            // ================= TEMPLATE BINDING =================
             html = html
-                    // Invoice
-                    .replace("{{invoice}}",
-                            invoice.getInvoice().getNumber())
-
+                    .replace("{{invoice}}", invoice.getInvoice().getNumber())
                     .replace("{{invoiceDate}}",
-                            invoice.getInvoice().getDate() != null
-                                    ? invoice.getInvoice().getDate().toString()
-                                    : "")
-
+                            invoice.getInvoice().getDate() != null ?
+                                    invoice.getInvoice().getDate().toString() : "")
                     .replace("{{dueDate}}",
-                            invoice.getInvoice().getDueDate() != null
-                                    ? invoice.getInvoice().getDueDate().toString()
-                                    : "")
-
-                    // Company
+                            invoice.getInvoice().getDueDate() != null ?
+                                    invoice.getInvoice().getDueDate().toString() : "")
                     .replace("{{company}}",
                             invoice.getCompany() != null ? invoice.getCompany().getName() : "")
-
                     .replace("{{address}}",
                             invoice.getCompany() != null ? invoice.getCompany().getAddress() : "")
-
-                    .replace("{{logo}}", logo)
-
-                    // Billing
                     .replace("{{billingName}}",
                             invoice.getBilling() != null ? invoice.getBilling().getName() : "")
-
                     .replace("{{billingPhone}}",
                             invoice.getBilling() != null ? invoice.getBilling().getPhone() : "")
-
                     .replace("{{billingAddress}}",
                             invoice.getBilling() != null ? invoice.getBilling().getAddress() : "")
-
-                    // Items
+                    .replace("{{logo}}", logo)
                     .replace("{{items}}", items.toString())
-
-                    // Totals
-                    .replace("{{total}}", String.valueOf(total))
-
-                    // Bank (optional)
-                    .replace("{{accountName}}", "Your Company Name")
-                    .replace("{{accountNumber}}", "1234567890")
-                    .replace("{{ifsc}}", "SBIN0000123")
-
-                    // QR
+                    .replace("{{subtotal}}", String.format("%.2f", subTotal))
+                    .replace("{{taxBlock}}", taxBlock.toString())
+                    .replace("{{total}}", String.format("%.2f", total))
                     .replace("{{qr}}",
-                            "<img width='100' src='data:image/png;base64," + qr + "'/>");
+                            "<img width='120' src='data:image/png;base64," + qr + "'/>");
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             PdfRendererBuilder builder = new PdfRendererBuilder();

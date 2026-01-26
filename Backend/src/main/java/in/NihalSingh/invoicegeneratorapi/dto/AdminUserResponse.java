@@ -1,20 +1,21 @@
 package in.NihalSingh.invoicegeneratorapi.dto;
 
-import lombok.Builder;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import java.util.List;
 
-@Data
-@Builder
-public class AdminUserResponse {
-    private Long id;
-    private String email;
-    private String username;
-    private String firstName;
-    private String lastName;
-    private String phone;
-    private String role;
-    private boolean enabled;
-    private LocalDateTime createdAt;
-}
+public record AdminUserResponse(
+
+        Long id,
+        String email,
+        String username,
+        String firstName,
+        String lastName,
+        String phone,
+        boolean enabled,
+        String role,
+
+        Long invoiceCount,                  // ✅ ADD THIS
+        List<String> usedTemplates,         // ✅ Already exists
+
+        LocalDateTime createdAt
+) {}

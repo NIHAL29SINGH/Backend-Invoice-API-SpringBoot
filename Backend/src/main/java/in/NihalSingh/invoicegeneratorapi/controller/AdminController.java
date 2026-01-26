@@ -14,16 +14,19 @@ public class AdminController {
 
     private final AdminService adminService;
 
+    // ✅ Get all users
     @GetMapping("/users")
     public List<AdminUserResponse> getAllUsers() {
         return adminService.getAllUsers();
     }
 
+    // ✅ Get single user
     @GetMapping("/users/{id}")
     public AdminUserResponse getUser(@PathVariable Long id) {
         return adminService.getUserById(id);
     }
 
+    // ✅ Delete user (auto deletes invoices)
     @DeleteMapping("/users/{id}")
     public String deleteUser(@PathVariable Long id) {
         adminService.deleteUser(id);

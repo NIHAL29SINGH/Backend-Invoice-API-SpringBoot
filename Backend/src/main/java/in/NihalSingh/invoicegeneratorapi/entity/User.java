@@ -52,4 +52,10 @@ public class User {
     // 🔥 FIX #2 — REQUIRED
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RegistrationToken> registrationTokens;
+
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Invoice> invoices;
+
+
 }

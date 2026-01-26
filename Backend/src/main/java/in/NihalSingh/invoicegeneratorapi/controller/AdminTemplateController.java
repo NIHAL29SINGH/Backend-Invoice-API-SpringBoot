@@ -14,13 +14,13 @@ public class AdminTemplateController {
 
     private final InvoiceTemplateService service;
 
-    // ✅ Create template
+    // ✅ CREATE TEMPLATE
     @PostMapping
     public InvoiceTemplate create(@RequestBody InvoiceTemplate template) {
         return service.create(template);
     }
 
-    // ✅ Update template
+    // ✅ UPDATE TEMPLATE
     @PutMapping("/{id}")
     public InvoiceTemplate update(
             @PathVariable Long id,
@@ -29,15 +29,13 @@ public class AdminTemplateController {
         return service.update(id, template);
     }
 
-    // ✅ Soft delete (disable)
+    // ✅ SOFT DELETE TEMPLATE
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
-        InvoiceTemplate template = service.getById(id); // ✅ FIX
-        template.setActive(false);
-        service.save(template);
+        service.delete(id);
     }
 
-    // ✅ Admin view all
+    // ✅ GET ALL TEMPLATES (ADMIN)
     @GetMapping
     public List<InvoiceTemplate> getAll() {
         return service.getAll();

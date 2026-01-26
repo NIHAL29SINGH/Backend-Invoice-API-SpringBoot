@@ -29,7 +29,12 @@ public class InvoiceService {
     private final EmailService emailService;
 
     // ================= CREATE =================
-    public Invoice createInvoice(String invoiceJson, MultipartFile logo, String email) {
+    public Invoice createInvoice(
+            String invoiceJson,
+            MultipartFile logo,
+            MultipartFile paymentQr,
+            String email
+    ) {
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new JavaTimeModule());
@@ -37,15 +42,13 @@ public class InvoiceService {
             Invoice invoice = mapper.readValue(invoiceJson, Invoice.class);
 
             User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-
-            if (invoice.getTemplate() == null || invoice.getTemplate().getId() == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Template is required");
-            }
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "User not found"));
 
             InvoiceTemplate template = templateRepository
                     .findById(invoice.getTemplate().getId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Template not found"));
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "Template not found"));
 
             invoice.setUser(user);
             invoice.setTemplate(template);
@@ -61,6 +64,13 @@ public class InvoiceService {
                 );
             }
 
+            // ✅ PAYMENT QR SUPPORT
+            if (paymentQr != null && !paymentQr.isEmpty()) {
+                invoice.setPaymentQrBase64(
+                        Base64.getEncoder().encodeToString(paymentQr.getBytes())
+                );
+            }
+
             return invoiceRepository.save(invoice);
 
         } catch (Exception e) {
@@ -68,7 +78,7 @@ public class InvoiceService {
         }
     }
 
-    // ================= LIST =================
+    // ================= LIST (FIXED) =================
     public List<InvoiceSummaryResponse> getAllInvoices(String email) {
         return invoiceRepository.findByUserEmail(email)
                 .stream()
@@ -88,34 +98,77 @@ public class InvoiceService {
         invoiceRepository.delete(invoice);
     }
 
-    // ================= PREVIEW =================
+    // ================= PREVIEW (BY TEMPLATE ID) =================
     public byte[] previewInvoice(Long id, Long templateId, String email) {
         Invoice invoice = getInvoice(id, email);
 
         InvoiceTemplate template = templateRepository.findById(templateId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Template not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Template not found"));
 
         invoice.setTemplate(template);
         return pdfService.generateInvoicePdf(invoice);
     }
 
-    // ================= SEND =================
+    // ================= SEND (BY TEMPLATE ID) =================
     public void sendInvoice(Long id, Long templateId, String toEmail, String userEmail) {
         Invoice invoice = getInvoice(id, userEmail);
 
         InvoiceTemplate template = templateRepository.findById(templateId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Template not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Template not found"));
 
         invoice.setTemplate(template);
-
         emailService.sendInvoiceEmail(toEmail, invoice);
+
         invoice.setStatus(InvoiceStatus.SENT);
         invoiceRepository.save(invoice);
     }
 
-    private Invoice getInvoice(Long id, String email) {
-        return invoiceRepository.findByUserEmailAndId(email, id)
-                .orElseThrow(() ->
-                        new ResponseStatusException(HttpStatus.NOT_FOUND, "Invoice not found"));
+    // ================= PREVIEW BY TEMPLATE NAME =================
+    public byte[] previewByTemplateName(Long id, String templateName, String email) {
+
+        Invoice invoice = getInvoice(id, email);
+
+        InvoiceTemplate template = templateRepository
+                .findByNameIgnoreCaseAndActiveTrue(templateName)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Template not found"));
+
+        invoice.setTemplate(template);
+        return pdfService.generateInvoicePdf(invoice);
     }
+
+    // ================= DOWNLOAD BY TEMPLATE NAME =================
+    public byte[] downloadByTemplateName(Long id, String templateName, String email) {
+        return previewByTemplateName(id, templateName, email);
+    }
+
+    // ================= SEND BY TEMPLATE NAME =================
+    public void sendByTemplateName(Long id, String templateName, String toEmail, String userEmail) {
+
+        Invoice invoice = getInvoice(id, userEmail);
+
+        InvoiceTemplate template = templateRepository
+                .findByNameIgnoreCaseAndActiveTrue(templateName)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Template not found"));
+
+        invoice.setTemplate(template);
+        emailService.sendInvoiceEmail(toEmail, invoice);
+
+        invoice.setStatus(InvoiceStatus.SENT);
+        invoiceRepository.save(invoice);
+    }
+
+    // ================= COMMON =================
+    private Invoice getInvoice(Long id, String email) {
+        return invoiceRepository
+                .findByUserEmailAndId(email, id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Invoice not found"));
+    }
+
+    //
+
 }

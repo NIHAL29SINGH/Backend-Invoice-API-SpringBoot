@@ -25,10 +25,16 @@ public class InvoiceController {
     public ResponseEntity<Invoice> createInvoice(
             @RequestPart("invoice") String invoiceJson,
             @RequestPart(value = "logo", required = false) MultipartFile logo,
+            @RequestPart(value = "paymentQr", required = false) MultipartFile paymentQr,
             Authentication auth
     ) {
         return ResponseEntity.ok(
-                invoiceService.createInvoice(invoiceJson, logo, auth.getName())
+                invoiceService.createInvoice(
+                        invoiceJson,
+                        logo,
+                        paymentQr,
+                        auth.getName()
+                )
         );
     }
 
@@ -50,9 +56,12 @@ public class InvoiceController {
         return ResponseEntity.ok("Invoice deleted successfully");
     }
 
-    // ================= PREVIEW =================
-    @GetMapping("/{id}/template/{templateId}/preview")
-    public ResponseEntity<byte[]> preview(
+    // ======================================================
+    // TEMPLATE BY ID
+    // ======================================================
+
+    @GetMapping("/{id}/template/id/{templateId}/preview")
+    public ResponseEntity<byte[]> previewByTemplateId(
             @PathVariable Long id,
             @PathVariable Long templateId,
             Authentication auth
@@ -65,9 +74,8 @@ public class InvoiceController {
                 .body(pdf);
     }
 
-    // ================= DOWNLOAD =================
-    @GetMapping("/{id}/template/{templateId}/download")
-    public ResponseEntity<byte[]> download(
+    @GetMapping("/{id}/template/id/{templateId}/download")
+    public ResponseEntity<byte[]> downloadByTemplateId(
             @PathVariable Long id,
             @PathVariable Long templateId,
             Authentication auth
@@ -81,15 +89,52 @@ public class InvoiceController {
                 .body(pdf);
     }
 
-    // ================= SEND EMAIL =================
-    @PostMapping("/{id}/template/{templateId}/send")
-    public ResponseEntity<String> send(
+    // ======================================================
+    // TEMPLATE BY NAME
+    // ======================================================
+
+    @GetMapping("/{id}/template/name/{templateName}/preview")
+    public ResponseEntity<byte[]> previewByTemplateName(
             @PathVariable Long id,
-            @PathVariable Long templateId,
+            @PathVariable String templateName,
+            Authentication auth
+    ) {
+        byte[] pdf = invoiceService.previewByTemplateName(
+                id, templateName, auth.getName());
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=invoice.pdf")
+                .body(pdf);
+    }
+
+    @GetMapping("/{id}/template/name/{templateName}/download")
+    public ResponseEntity<byte[]> downloadByTemplateName(
+            @PathVariable Long id,
+            @PathVariable String templateName,
+            Authentication auth
+    ) {
+        byte[] pdf = invoiceService.downloadByTemplateName(
+                id, templateName, auth.getName());
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=invoice.pdf")
+                .body(pdf);
+    }
+
+    @PostMapping("/{id}/template/name/{templateName}/send")
+    public ResponseEntity<String> sendByTemplateName(
+            @PathVariable Long id,
+            @PathVariable String templateName,
             @RequestParam String email,
             Authentication auth
     ) {
-        invoiceService.sendInvoice(id, templateId, email, auth.getName());
+        invoiceService.sendByTemplateName(
+                id, templateName, email, auth.getName());
+
         return ResponseEntity.ok("Invoice sent successfully");
     }
 }
+
