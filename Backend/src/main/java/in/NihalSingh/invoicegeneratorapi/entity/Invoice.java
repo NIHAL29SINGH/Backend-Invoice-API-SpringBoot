@@ -97,4 +97,7 @@ public class Invoice {
     // ✅ NEW FIELD (SAFE)
     @Column(columnDefinition = "LONGTEXT")
     private String paymentQrBase64;
+    // ✅ IMPORTANT: SNAPSHOT OF TEMPLATE HTML
+    @Column(columnDefinition = "LONGTEXT", nullable = false)
+    private String templateHtml;
 }

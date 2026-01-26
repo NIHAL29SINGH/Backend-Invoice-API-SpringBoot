@@ -17,7 +17,12 @@ public class PdfService {
     public byte[] generateInvoicePdf(Invoice invoice) {
 
         try {
-            String html = invoice.getTemplate().getHtmlTemplate();
+            // ✅ FIX: USE STORED TEMPLATE HTML
+            String html = invoice.getTemplateHtml();
+
+            if (html == null || html.isBlank()) {
+                throw new RuntimeException("Invoice template HTML is missing");
+            }
 
             // ================= LOGO =================
             String logo = "";
@@ -31,9 +36,9 @@ public class PdfService {
                 }
 
                 logo = """
-                    <img src="data:image/png;base64,%s"
-                         style="width:120px;height:auto;margin-bottom:10px;" />
-                """.formatted(base64);
+                        <img src="data:image/png;base64,%s"
+                             style="width:120px;height:auto;margin-bottom:10px;" />
+                        """.formatted(base64);
             }
 
             // ================= ITEMS =================
@@ -45,13 +50,13 @@ public class PdfService {
                 subTotal += rowTotal;
 
                 items.append("""
-                    <tr>
-                        <td>%s</td>
-                        <td>%d</td>
-                        <td>₹%.2f</td>
-                        <td>₹%.2f</td>
-                    </tr>
-                """.formatted(
+                        <tr>
+                            <td>%s</td>
+                            <td>%d</td>
+                            <td>₹%.2f</td>
+                            <td>₹%.2f</td>
+                        </tr>
+                        """.formatted(
                         item.getName(),
                         item.getQty(),
                         item.getAmount(),
@@ -67,13 +72,13 @@ public class PdfService {
             StringBuilder taxBlock = new StringBuilder();
 
             if (cgst > 0)
-                taxBlock.append("<tr><td>CGST</td><td>₹" + cgst + "</td></tr>");
+                taxBlock.append("<tr><td>CGST</td><td>₹").append(cgst).append("</td></tr>");
 
             if (sgst > 0)
-                taxBlock.append("<tr><td>SGST</td><td>₹" + sgst + "</td></tr>");
+                taxBlock.append("<tr><td>SGST</td><td>₹").append(sgst).append("</td></tr>");
 
             if (igst > 0)
-                taxBlock.append("<tr><td>IGST</td><td>₹" + igst + "</td></tr>");
+                taxBlock.append("<tr><td>IGST</td><td>₹").append(igst).append("</td></tr>");
 
             double total = subTotal + cgst + sgst + igst;
 

@@ -45,27 +45,29 @@ public class InvoiceService {
                     .orElseThrow(() ->
                             new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-            // ✅ DO NOT FETCH TEMPLATE HERE
-            // Template will be attached later during preview/send
+            // 🔥 FETCH TEMPLATE
+            InvoiceTemplate template = templateRepository.findById(
+                    invoice.getTemplate().getId()
+            ).orElseThrow(() ->
+                    new ResponseStatusException(HttpStatus.NOT_FOUND, "Template not found"));
+
+            // ✅ IMPORTANT FIX
+            invoice.setTemplate(template); // optional reference
+            invoice.setTemplateHtml(template.getHtmlTemplate()); // snapshot
 
             invoice.setUser(user);
             invoice.setStatus(InvoiceStatus.DRAFT);
             invoice.setCreatedAt(Instant.now());
 
-            // Generate invoice number
-            if (invoice.getInvoice() != null) {
-                invoice.getInvoice()
-                        .setNumber("INV-" + UUID.randomUUID().toString().substring(0, 8));
-            }
+            invoice.getInvoice()
+                    .setNumber("INV-" + UUID.randomUUID().toString().substring(0, 8));
 
-            // Logo
             if (logo != null && !logo.isEmpty()) {
                 invoice.getCompany().setLogoBase64(
                         Base64.getEncoder().encodeToString(logo.getBytes())
                 );
             }
 
-            // Payment QR
             if (paymentQr != null && !paymentQr.isEmpty()) {
                 invoice.setPaymentQrBase64(
                         Base64.getEncoder().encodeToString(paymentQr.getBytes())
@@ -78,6 +80,7 @@ public class InvoiceService {
             throw new RuntimeException("Invalid invoice data", e);
         }
     }
+
 
     // ================= LIST (FIXED) =================
     public List<InvoiceSummaryResponse> getAllInvoices(String email) {
@@ -103,9 +106,15 @@ public class InvoiceService {
     public byte[] previewInvoice(Long id, Long templateId, String email) {
         Invoice invoice = getInvoice(id, email);
 
-        InvoiceTemplate template = templateRepository.findById(templateId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Template not found"));
+        InvoiceTemplate template = templateRepository.findById(
+                invoice.getTemplate().getId()
+        ).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Template not found"));
+
+// VERY IMPORTANT
+        invoice.setTemplate(template); // optional
+        invoice.setTemplateHtml(template.getHtmlTemplate()); // permanent snapshot
+
 
         invoice.setTemplate(template);
         return pdfService.generateInvoicePdf(invoice);

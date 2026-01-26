@@ -34,6 +34,11 @@ public class AdminTemplateController {
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }
+    // ✅ HARD DELETE (NEW)
+    @DeleteMapping("/{id}/hard")
+    public void hardDelete(@PathVariable Long id) {
+        service.hardDelete(id);
+    }
 
     // ✅ GET ALL TEMPLATES (ADMIN)
     @GetMapping

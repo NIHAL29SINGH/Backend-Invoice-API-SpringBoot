@@ -66,4 +66,14 @@ public class InvoiceTemplateService {
         template.setActive(false);
         repository.save(template);
     }
+
+    // ✅ HARD DELETE (NEW)
+    // =============================
+    public void hardDelete(Long id) {
+        if (!repository.existsById(id)) {
+            throw new RuntimeException("Template not found");
+        }
+
+        repository.deleteById(id);
+    }
 }
