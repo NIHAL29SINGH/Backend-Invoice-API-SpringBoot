@@ -1,5 +1,6 @@
 package in.NihalSingh.invoicegeneratorapi.controller;
 
+import in.NihalSingh.invoicegeneratorapi.dto.TemplateSummaryResponse;
 import in.NihalSingh.invoicegeneratorapi.entity.InvoiceTemplate;
 import in.NihalSingh.invoicegeneratorapi.service.InvoiceTemplateService;
 import lombok.RequiredArgsConstructor;
@@ -14,13 +15,17 @@ public class TemplateController {
 
     private final InvoiceTemplateService service;
 
+    // ✅ GET ALL (ONLY id, name, active)
     @GetMapping
-    public List<InvoiceTemplate> getActiveTemplates() {
-        return service.getActiveTemplates();
+    public List<TemplateSummaryResponse> getAll() {
+        return service.getAll();
     }
+    /*
 
     @GetMapping("/{id}")
     public InvoiceTemplate getTemplate(@PathVariable Long id) {
         return service.getById(id);
     }
+
+     */
 }

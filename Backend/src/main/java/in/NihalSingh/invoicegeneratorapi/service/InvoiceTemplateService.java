@@ -1,5 +1,7 @@
 package in.NihalSingh.invoicegeneratorapi.service;
 
+import in.NihalSingh.invoicegeneratorapi.dto.TemplateSummaryResponse;
+import in.NihalSingh.invoicegeneratorapi.dto.TemplateSummaryResponse;
 import in.NihalSingh.invoicegeneratorapi.entity.InvoiceTemplate;
 import in.NihalSingh.invoicegeneratorapi.repository.InvoiceTemplateRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,25 +18,37 @@ public class InvoiceTemplateService {
     // =============================
     // GET ALL (ADMIN)
     // =============================
-    public List<InvoiceTemplate> getAll() {
-        return repository.findAll();
+    public List<TemplateSummaryResponse> getAll() {
+        return repository.findAll()
+                .stream()
+                .map(t -> new TemplateSummaryResponse(
+                        t.getId(),
+                        t.getName(),
+                        t.isActive()
+                ))
+                .toList();
     }
 
     // =============================
     // GET ACTIVE (USER SIDE)
     // =============================
-    public List<InvoiceTemplate> getActiveTemplates() {
-        return repository.findByActiveTrue();
+    public List<TemplateSummaryResponse> getActiveTemplates() {
+        return repository.findByActiveTrue()
+                .stream()
+                .map(t -> new TemplateSummaryResponse(
+                        t.getId(),
+                        t.getName(),
+                        t.isActive()
+                ))
+                .toList();
     }
 
     // =============================
-    // GET BY ID
+    // GET BY ID (FULL)
     // =============================
     public InvoiceTemplate getById(Long id) {
         return repository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("Template not found")
-                );
+                .orElseThrow(() -> new RuntimeException("Template not found"));
     }
 
     // =============================
@@ -50,30 +64,19 @@ public class InvoiceTemplateService {
     // =============================
     public InvoiceTemplate update(Long id, InvoiceTemplate template) {
         InvoiceTemplate existing = getById(id);
-
         existing.setName(template.getName());
         existing.setHtmlTemplate(template.getHtmlTemplate());
         existing.setActive(template.isActive());
-
         return repository.save(existing);
     }
 
     // =============================
-    // SOFT DELETE
-    // =============================
-    public void delete(Long id) {
-        InvoiceTemplate template = getById(id);
-        template.setActive(false);
-        repository.save(template);
-    }
-
-    // ✅ HARD DELETE (NEW)
+    // HARD DELETE
     // =============================
     public void hardDelete(Long id) {
         if (!repository.existsById(id)) {
             throw new RuntimeException("Template not found");
         }
-
         repository.deleteById(id);
     }
 }

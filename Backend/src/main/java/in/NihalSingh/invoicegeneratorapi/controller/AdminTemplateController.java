@@ -1,5 +1,6 @@
 package in.NihalSingh.invoicegeneratorapi.controller;
 
+import in.NihalSingh.invoicegeneratorapi.dto.TemplateSummaryResponse;
 import in.NihalSingh.invoicegeneratorapi.entity.InvoiceTemplate;
 import in.NihalSingh.invoicegeneratorapi.service.InvoiceTemplateService;
 import lombok.RequiredArgsConstructor;
@@ -28,21 +29,24 @@ public class AdminTemplateController {
     ) {
         return service.update(id, template);
     }
-
+/*
     // ✅ SOFT DELETE TEMPLATE
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }
+
+ */
+
     // ✅ HARD DELETE (NEW)
     @DeleteMapping("/{id}/hard")
     public void hardDelete(@PathVariable Long id) {
         service.hardDelete(id);
     }
 
-    // ✅ GET ALL TEMPLATES (ADMIN)
+    // ✅ GET ALL (ONLY id, name, active)
     @GetMapping
-    public List<InvoiceTemplate> getAll() {
+    public List<TemplateSummaryResponse> getAll() {
         return service.getAll();
     }
 }
