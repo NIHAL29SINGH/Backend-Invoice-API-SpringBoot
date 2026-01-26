@@ -73,7 +73,7 @@ public class Invoice {
 
     // ================= TEMPLATE =================
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "template_id", nullable = false)
+    @JoinColumn(name = "template_id", nullable = true)
     private InvoiceTemplate template;
 
     // ================= EXTRA =================

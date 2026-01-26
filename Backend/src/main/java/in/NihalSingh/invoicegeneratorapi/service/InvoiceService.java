@@ -42,29 +42,30 @@ public class InvoiceService {
             Invoice invoice = mapper.readValue(invoiceJson, Invoice.class);
 
             User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.NOT_FOUND, "User not found"));
+                    .orElseThrow(() ->
+                            new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-            InvoiceTemplate template = templateRepository
-                    .findById(invoice.getTemplate().getId())
-                    .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.NOT_FOUND, "Template not found"));
+            // ✅ DO NOT FETCH TEMPLATE HERE
+            // Template will be attached later during preview/send
 
             invoice.setUser(user);
-            invoice.setTemplate(template);
             invoice.setStatus(InvoiceStatus.DRAFT);
             invoice.setCreatedAt(Instant.now());
 
-            invoice.getInvoice()
-                    .setNumber("INV-" + UUID.randomUUID().toString().substring(0, 8));
+            // Generate invoice number
+            if (invoice.getInvoice() != null) {
+                invoice.getInvoice()
+                        .setNumber("INV-" + UUID.randomUUID().toString().substring(0, 8));
+            }
 
+            // Logo
             if (logo != null && !logo.isEmpty()) {
                 invoice.getCompany().setLogoBase64(
                         Base64.getEncoder().encodeToString(logo.getBytes())
                 );
             }
 
-            // ✅ PAYMENT QR SUPPORT
+            // Payment QR
             if (paymentQr != null && !paymentQr.isEmpty()) {
                 invoice.setPaymentQrBase64(
                         Base64.getEncoder().encodeToString(paymentQr.getBytes())
